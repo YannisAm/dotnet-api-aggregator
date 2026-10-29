@@ -24,7 +24,7 @@ namespace ApiAggregator.API.Services
         {
             string cacheKey = CreateCacheKey(parameters);
 
-            if (_cache.TryGetValue(cacheKey, out AggregatedResponse cachedResponse))
+            if (_cache.TryGetValue(cacheKey, out AggregatedResponse? cachedResponse) && cachedResponse is not null)
             {
                 return cachedResponse;
             }
@@ -47,11 +47,16 @@ namespace ApiAggregator.API.Services
                 Results = results.ToDictionary(r => r.Source)
             };
 
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
-                .SetSlidingExpiration(TimeSpan.FromMinutes(2));
+            var allSucceeded = finalResponse.Results.Values.All(r => r.IsSuccess);
 
-            _cache.Set(cacheKey, finalResponse, cacheOptions);
+            if (allSucceeded)
+            {
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5))
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(2));
+
+                _cache.Set(cacheKey, finalResponse, cacheOptions);
+            }
 
             return finalResponse;
         }

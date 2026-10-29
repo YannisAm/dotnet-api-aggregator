@@ -105,5 +105,41 @@ namespace ApiAggregator.API.Tests.Services
             Assert.True(result.Results.ContainsKey("Stocks"));
             Assert.Equal("AAPL 230.10", result.Results["Stocks"].Data);
         }
+
+        [Fact]
+        public async Task GetEverythingAsync_DoesNotCache_WhenASourceFails()
+        {
+            var failingClient = new Mock<IApiClientInterface>();
+            failingClient
+                .Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+                .ReturnsAsync(new ApiResult<string> { Source = "OpenWeather", IsSuccess = false, ErrorMessage = "Timeout" });
+
+            var service = new AggregationService(new[] { failingClient.Object }, _statsMock.Object, _cache);
+            var parameters = new AggregateQueryParameters();
+
+            await service.GetEverythingAsync(parameters);
+            await service.GetEverythingAsync(parameters);
+
+            // Failure MUST NOT be cached, so the client is called both times
+            failingClient.Verify(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task GetEverythingAsync_UsesCache_WhenAllSourcesSucceed()
+        {
+            var okClient = new Mock<IApiClientInterface>();
+            okClient
+                .Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+                .ReturnsAsync(new ApiResult<string> { Source = "OpenWeather", IsSuccess = true, Data = "sunny" });
+
+            var service = new AggregationService(new[] { okClient.Object }, _statsMock.Object, _cache);
+            var parameters = new AggregateQueryParameters();
+
+            await service.GetEverythingAsync(parameters);
+            await service.GetEverythingAsync(parameters);
+
+            // Success MUST be cached, so the client is called only once
+            okClient.Verify(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()), Times.Once);
+        }
     }
 }
