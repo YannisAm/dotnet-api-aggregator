@@ -1,85 +1,40 @@
 ﻿using ApiAggregator.API.DTOs;
 using ApiAggregator.API.DTOs.News;
-using ApiAggregator.API.Interfaces;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace ApiAggregator.API.Clients
 {
-    public class NewsClient : IApiClientInterface
+    public class NewsClient : ApiClientBase<NewsResponse>
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-
-        public NewsClient(HttpClient httpClient, IConfiguration configuration)
+        public NewsClient(HttpClient httpClient, IConfiguration configuration, ILogger<NewsClient> logger)
+            : base(httpClient, logger, configuration["News:ApiKey"])
         {
-            _httpClient = httpClient;
-            _apiKey = configuration["News:ApiKey"] ?? "";
         }
 
-        public async Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters)
+        protected override string SourceName => "News";
+
+        protected override string BuildRequestUrl(AggregateQueryParameters parameters)
         {
-            var rValue = new ApiResult<NewsResponse>
+            var query = new Dictionary<string, string?>
             {
-                Source = "News"
+                ["apiKey"] = ApiKey,
+                ["q"] = parameters.NewsKeyword,
+                ["from"] = parameters.FromDateFormatted
             };
 
-            if (string.IsNullOrEmpty(_apiKey))
-            {
-                rValue.IsSuccess = false;
-                rValue.ErrorMessage = "API key is missing. Please check configuration.";
-                return rValue;
-            }
+            if (!string.IsNullOrEmpty(parameters.Language))
+                query["language"] = parameters.Language;
 
-            try
-            {
-                var baseUrl = "everything";
+            if (!string.IsNullOrEmpty(parameters.SortBy))
+                query["sortBy"] = parameters.SortBy;
 
-                var queryParams = new Dictionary<string, string?>();
+            if (parameters.Page > 0)
+                query["page"] = parameters.Page.ToString();
 
-                queryParams.Add("apiKey", _apiKey);
+            if (parameters.PageSize > 0)
+                query["pageSize"] = parameters.PageSize.ToString();
 
-                queryParams.Add("q", parameters.NewsKeyword);
-
-                if (!string.IsNullOrEmpty(parameters.FromDateFormatted))
-                    queryParams.Add("from", parameters.FromDateFormatted);
-
-                if (!string.IsNullOrEmpty(parameters.Language))
-                    queryParams.Add("language", parameters.Language);
-
-                if (!string.IsNullOrEmpty(parameters.SortBy))
-                    queryParams.Add("sortBy", parameters.SortBy);
-
-                if (parameters.Page > 0)
-                    queryParams.Add("page", parameters.Page.ToString());
-
-                if (parameters.PageSize > 0)
-                    queryParams.Add("pageSize", parameters.PageSize.ToString());
-
-                var finalUrl = QueryHelpers.AddQueryString(baseUrl, queryParams);
-
-                var response = await _httpClient.GetAsync(finalUrl);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    rValue.Data = await response.Content.ReadFromJsonAsync<NewsResponse>();
-                    rValue.IsSuccess = rValue.Data != null;
-
-                    if (!rValue.IsSuccess)
-                        rValue.ErrorMessage = "API returned 200 but the body was empty.";
-                }
-                else
-                {
-                    rValue.IsSuccess = false;
-                    rValue.ErrorMessage = $"API Error: {(int)response.StatusCode} ({response.ReasonPhrase})";
-                }
-            }
-            catch (Exception ex)
-            {
-                rValue.IsSuccess = false;
-                rValue.ErrorMessage = $"Connection Error: {ex.Message}";
-            }
-
-            return rValue;
+            return QueryHelpers.AddQueryString("everything", query);
         }
     }
 }

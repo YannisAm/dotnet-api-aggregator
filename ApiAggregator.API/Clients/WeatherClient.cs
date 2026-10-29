@@ -1,76 +1,31 @@
 ﻿using ApiAggregator.API.DTOs;
 using ApiAggregator.API.DTOs.Weather;
-using ApiAggregator.API.Interfaces;
 using Microsoft.AspNetCore.WebUtilities;
-using System.Globalization;
 
 namespace ApiAggregator.API.Clients
 {
-    public class WeatherClient : IApiClientInterface
+    public class WeatherClient : ApiClientBase<WeatherResponse>
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-
-        public WeatherClient(HttpClient httpClient, IConfiguration configuration)
+        public WeatherClient(HttpClient httpClient, IConfiguration configuration, ILogger<WeatherClient> logger)
+            : base(httpClient, logger, configuration["OpenWeather:ApiKey"])
         {
-            _httpClient = httpClient;
-            _apiKey = configuration["OpenWeather:ApiKey"] ?? "";
         }
 
-        public async Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters)
+        protected override string SourceName => "OpenWeather";
+
+        protected override string BuildRequestUrl(AggregateQueryParameters parameters)
         {
-            var rValue = new ApiResult<WeatherResponse>
+            var query = new Dictionary<string, string?>
             {
-                Source = "OpenWeather"
+                ["appid"] = ApiKey,
+                ["lat"] = parameters.LatString,
+                ["lon"] = parameters.LonString
             };
 
-            if (string.IsNullOrEmpty(_apiKey))
-            {
-                rValue.IsSuccess = false;
-                rValue.ErrorMessage = "API key is missing. Please check configuration.";
-                return rValue;
-            }
+            if (!string.IsNullOrEmpty(parameters.Units))
+                query["units"] = parameters.Units;
 
-            try
-            {
-                var baseUrl = "data/2.5/weather";
-
-                var queryParams = new Dictionary<string, string?>();
-
-                queryParams.Add("appid", _apiKey);
-                queryParams.Add("lat", parameters.LatString);
-                queryParams.Add("lon", parameters.LonString);
-
-                if (!string.IsNullOrEmpty(parameters.Units))
-                {
-                    queryParams.Add("units", parameters.Units);
-                }
-
-                var finalUrl = QueryHelpers.AddQueryString(baseUrl, queryParams);
-
-                var response = await _httpClient.GetAsync(finalUrl);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    rValue.Data = await response.Content.ReadFromJsonAsync<WeatherResponse>();
-                    rValue.IsSuccess = rValue.Data != null;
-
-                    if (!rValue.IsSuccess)
-                        rValue.ErrorMessage = "API returned success but empty data.";
-                }
-                else
-                {
-                    rValue.IsSuccess = false;
-                    rValue.ErrorMessage = $"API Error: {(int)response.StatusCode} ({response.ReasonPhrase})";
-                }
-            }
-            catch (Exception ex)
-            {
-                rValue.IsSuccess = false;
-                rValue.ErrorMessage = $"Connection Error: {ex.Message}";
-            }
-
-            return rValue;
+            return QueryHelpers.AddQueryString("data/2.5/weather", query);
         }
     }
 }
