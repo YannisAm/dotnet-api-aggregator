@@ -78,5 +78,18 @@ namespace ApiAggregator.API.Tests.Services
 
             Assert.Equal(178.43, (double)result.AverageResponseTime, 2);
         }
+
+        [Fact]
+        public void RecordRequest_IsThreadSafe_UnderParallelLoad()
+        {
+            var stats = new StatisticsService();
+            const int calls = 100_000;
+
+            Parallel.For(0, calls, _ => stats.RecordRequest("OpenWeather", 50));
+
+            var result = stats.GetStats()["OpenWeather"];
+            Assert.Equal(calls, result.TotalRequests);
+            Assert.Equal(calls, result.PerformanceBuckets.Fast);
+        }
     }
 }

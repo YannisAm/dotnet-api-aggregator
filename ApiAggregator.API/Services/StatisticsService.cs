@@ -12,29 +12,39 @@ namespace ApiAggregator.API.Services
         {
             var stats = _stats.GetOrAdd(apiName, _ => new ApiStats());
 
-            stats.TotalRequests++;
-            stats.TotalResponseTime += responseTimeMs;
+            lock (stats)
+            {
+                stats.TotalRequests++;
+                stats.TotalResponseTime += responseTimeMs;
 
-            if (responseTimeMs < 100) stats.FastRequests++;
-            else if (responseTimeMs <= 200) stats.AverageRequests++;
-            else stats.SlowRequests++;
+                if (responseTimeMs < 100) stats.FastRequests++;
+                else if (responseTimeMs <= 200) stats.AverageRequests++;
+                else stats.SlowRequests++;
+            }
         }
 
         public IDictionary<string, ApiStatsDto> GetStats()
         {
             return _stats.ToDictionary(
                 kvp => kvp.Key,
-                kvp => new ApiStatsDto
+                kvp =>
                 {
-                    TotalRequests = kvp.Value.TotalRequests,
-                    AverageResponseTime = kvp.Value.TotalRequests > 0
-                        ? Math.Round(kvp.Value.TotalResponseTime / (double)kvp.Value.TotalRequests, 2)
-                        : 0,
-                    PerformanceBuckets = new PerformanceBucketsDto
+                    var s = kvp.Value;
+                    lock (s)
                     {
-                        Fast = kvp.Value.FastRequests,
-                        Average = kvp.Value.AverageRequests,
-                        Slow = kvp.Value.SlowRequests
+                        return new ApiStatsDto
+                        {
+                            TotalRequests = s.TotalRequests,
+                            AverageResponseTime = s.TotalRequests > 0
+                                ? Math.Round(s.TotalResponseTime / s.TotalRequests, 2)
+                                : 0,
+                            PerformanceBuckets = new PerformanceBucketsDto
+                            {
+                                Fast = s.FastRequests,
+                                Average = s.AverageRequests,
+                                Slow = s.SlowRequests
+                            }
+                        };
                     }
                 });
         }
