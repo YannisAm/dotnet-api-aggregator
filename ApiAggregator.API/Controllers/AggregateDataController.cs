@@ -34,6 +34,7 @@ namespace ApiAggregator.API.Controllers
         /// requests per minute.
         /// </remarks>
         /// <param name="parameters">The query parameters including city, news keywords, and base currency.</param>
+        /// <param name="cancellationToken">Cancelled automatically when the client disconnects.</param>
         /// <returns>An aggregated object containing results from all external sources.</returns>
         /// <response code="200">
         /// Returns the aggregated data successfully.
