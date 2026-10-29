@@ -15,26 +15,28 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddHttpClient<WeatherClient>(client =>
+// Shared settings for every HttpClient: User-Agent header and resilience pipeline
+builder.Services.ConfigureHttpClientDefaults(http =>
 {
-    client.BaseAddress = new Uri("https://api.openweathermap.org/");
-    client.DefaultRequestHeaders.Add("User-Agent", "ApiAggregator.API");
-})
-.AddTransientHttpErrorPolicy(p => p.WaitAndRetryAsync(3, _ => TimeSpan.FromMilliseconds(500)));
+    http.ConfigureHttpClient(client =>
+        client.DefaultRequestHeaders.Add("User-Agent", "ApiAggregator.API"));
+
+    http.AddStandardResilienceHandler(options =>
+    {
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(3);       // each single call
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(10); // all attempts together
+        options.Retry.Delay = TimeSpan.FromMilliseconds(500);           // first retry delay, then exponential
+    });
+});
+
+builder.Services.AddHttpClient<WeatherClient>(client =>
+    client.BaseAddress = new Uri("https://api.openweathermap.org/"));
 
 builder.Services.AddHttpClient<NewsClient>(client =>
-{
-    client.BaseAddress = new Uri("https://newsapi.org/v2/");
-    client.DefaultRequestHeaders.Add("User-Agent", "ApiAggregator.API");
-})
-.AddTransientHttpErrorPolicy(p => p.WaitAndRetryAsync(3, _ => TimeSpan.FromMilliseconds(500)));
+    client.BaseAddress = new Uri("https://newsapi.org/v2/"));
 
 builder.Services.AddHttpClient<ExchangeRatesClient>(client =>
-{
-    client.BaseAddress = new Uri("https://v6.exchangerate-api.com/v6/");
-    client.DefaultRequestHeaders.Add("User-Agent", "ApiAggregator.API");
-})
-.AddTransientHttpErrorPolicy(p => p.WaitAndRetryAsync(3, _ => TimeSpan.FromMilliseconds(500)));
+    client.BaseAddress = new Uri("https://v6.exchangerate-api.com/v6/"));
 
 builder.Services.AddScoped<IAggregationService, AggregationService>();
 builder.Services.AddTransient<IApiClientInterface, NewsClient>(sp => sp.GetRequiredService<NewsClient>());
