@@ -35,8 +35,7 @@ namespace ApiAggregator.API.Services
                 var result = await client.FetchDataAsync(parameters);
                 sw.Stop();
 
-                if (result is IApiResult apiResult)
-                    _statisticsService.RecordRequest(apiResult.Source, sw.ElapsedMilliseconds);
+                _statisticsService.RecordRequest(result.Source, sw.ElapsedMilliseconds);
 
                 return result;
             });
@@ -45,9 +44,7 @@ namespace ApiAggregator.API.Services
 
             var finalResponse = new AggregatedResponse
             {
-                Weather = results.OfType<ApiResult<WeatherResponse>>().FirstOrDefault(),
-                News = results.OfType<ApiResult<NewsResponse>>().FirstOrDefault(),
-                ExchangeRates = results.OfType<ApiResult<ExchangeRateResponse>>().FirstOrDefault()
+                Results = results.ToDictionary(r => r.Source)
             };
 
             var cacheOptions = new MemoryCacheEntryOptions()

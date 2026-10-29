@@ -4,6 +4,6 @@ namespace ApiAggregator.API.Interfaces
 {
     public interface IApiClientInterface
     {
-        Task<object> FetchDataAsync(AggregateQueryParameters parameters);
+        Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters);
     }
 }

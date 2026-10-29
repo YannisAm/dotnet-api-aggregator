@@ -5,5 +5,6 @@
         string Source { get; }
         bool IsSuccess { get; }
         string? ErrorMessage { get; }
+        object? Data { get; }
     }
 }

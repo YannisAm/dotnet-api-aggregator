@@ -8,5 +8,6 @@ namespace ApiAggregator.API.DTOs
         public bool IsSuccess { get; set; }
         public T? Data { get; set; }
         public string? ErrorMessage { get; set; }
+        object? IApiResult.Data => Data;
     }
 }

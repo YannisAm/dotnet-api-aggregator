@@ -15,7 +15,7 @@ namespace ApiAggregator.API.Clients
             _apiKey = configuration["ExchangeRates:ApiKey"] ?? "";
         }
 
-        public async Task<object> FetchDataAsync(AggregateQueryParameters parameters)
+        public async Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters)
         {
             var rValue = new ApiResult<ExchangeRateResponse>
             {

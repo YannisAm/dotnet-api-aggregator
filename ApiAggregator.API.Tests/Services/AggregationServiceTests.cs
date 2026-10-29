@@ -81,14 +81,29 @@ namespace ApiAggregator.API.Tests.Services
             var result = await service.GetEverythingAsync(new AggregateQueryParameters());
 
             Assert.NotNull(result);
-            Assert.NotNull(result.Weather);
-            Assert.False(result.Weather.IsSuccess);
-            Assert.Contains("API returned success but empty data.", result.Weather.ErrorMessage);
-            Assert.True(result.News.IsSuccess);
-            Assert.True(result.ExchangeRates.IsSuccess);
+            Assert.False(result.Results["OpenWeather"].IsSuccess);
+            Assert.Contains("API returned success but empty data.", result.Results["OpenWeather"].ErrorMessage);
+            Assert.True(result.Results["News"].IsSuccess);
+            Assert.True(result.Results["ExchangeRates"].IsSuccess);
             weatherMock.Verify(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()), Times.Once);
             newsMock.Verify(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()), Times.Once);
             exchangeMock.Verify(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetEverythingAsync_IncludesNewSource_WithoutAggregatorChanges()
+        {
+            var stocksMock = new Mock<IApiClientInterface>();
+            stocksMock
+                .Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+                .ReturnsAsync(new ApiResult<string> { Source = "Stocks", IsSuccess = true, Data = "AAPL 230.10" });
+
+            var service = new AggregationService(new[] { stocksMock.Object }, _statsMock.Object, _cache);
+
+            var result = await service.GetEverythingAsync(new AggregateQueryParameters());
+
+            Assert.True(result.Results.ContainsKey("Stocks"));
+            Assert.Equal("AAPL 230.10", result.Results["Stocks"].Data);
         }
     }
 }

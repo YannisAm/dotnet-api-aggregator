@@ -1,13 +1,13 @@
 ﻿using ApiAggregator.API.DTOs.ExchangeRates;
 using ApiAggregator.API.DTOs.News;
 using ApiAggregator.API.DTOs.Weather;
+using ApiAggregator.API.Interfaces;
 
 namespace ApiAggregator.API.DTOs
 {
     public class AggregatedResponse
     {
-        public ApiResult<WeatherResponse>? Weather { get; set; }
-        public ApiResult<NewsResponse>? News { get; set; }
-        public ApiResult<ExchangeRateResponse>? ExchangeRates { get; set; }
+        public IReadOnlyDictionary<string, IApiResult> Results { get; init; }
+            = new Dictionary<string, IApiResult>();
     }
 }
