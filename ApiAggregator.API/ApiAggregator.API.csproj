@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -7,6 +7,7 @@
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	<NoWarn>$(NoWarn);1591</NoWarn>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	<UserSecretsId>546a9991-bb90-4d75-bc86-4b1a4a5527ec</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
