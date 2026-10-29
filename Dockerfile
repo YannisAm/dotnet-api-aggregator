@@ -13,6 +13,7 @@ RUN dotnet publish ApiAggregator.API/ApiAggregator.API.csproj -c Release -o /app
 
 # ---------- Runtime stage: small image with only the ASP.NET runtime ----------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+LABEL org.opencontainers.image.source=https://github.com/YannisAm/dotnet-api-aggregator
 WORKDIR /app
 COPY --from=build /app/publish .
 
