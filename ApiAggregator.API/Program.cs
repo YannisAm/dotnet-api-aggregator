@@ -12,8 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
 // Shared settings for every HttpClient: User-Agent header and resilience pipeline
 builder.Services.ConfigureHttpClientDefaults(http =>
