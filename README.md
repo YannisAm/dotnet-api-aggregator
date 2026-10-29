@@ -182,4 +182,8 @@ The Docker image uses a multi-stage build: the .NET SDK compiles the app, and th
 
 ## Tech stack
 
-.NET 10 · ASP.NET Core · C# · `Microsoft.Extensions.Http.Resilience` · `IMemoryCache` · Rate limiting middleware · Swagger (Swashbuckle) · xUnit · Moq · `WebApplicationFactory` · Docker · GitHub Actions · GitHub Container Registry
+- **Platform:** .NET 10, ASP.NET Core, C#
+- **Resilience and performance:** Microsoft.Extensions.Http.Resilience, in-memory caching, rate limiting middleware
+- **API documentation:** Swagger (Swashbuckle)
+- **Testing:** xUnit, Moq, WebApplicationFactory
+- **DevOps:** Docker, GitHub Actions, GitHub Container Registry
