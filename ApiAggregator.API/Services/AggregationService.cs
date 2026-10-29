@@ -20,7 +20,7 @@ namespace ApiAggregator.API.Services
             _cache = cache;
         }
 
-        public async Task<AggregatedResponse> GetEverythingAsync(AggregateQueryParameters parameters)
+        public async Task<AggregatedResponse> GetEverythingAsync(AggregateQueryParameters parameters, CancellationToken cancellationToken)
         {
             string cacheKey = CreateCacheKey(parameters);
 
@@ -32,7 +32,7 @@ namespace ApiAggregator.API.Services
             var tasks = _apiClients.Select(async client =>
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                var result = await client.FetchDataAsync(parameters);
+                var result = await client.FetchDataAsync(parameters, cancellationToken);
                 sw.Stop();
 
                 _statisticsService.RecordRequest(result.Source, sw.ElapsedMilliseconds);

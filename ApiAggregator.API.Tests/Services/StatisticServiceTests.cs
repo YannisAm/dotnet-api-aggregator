@@ -33,20 +33,20 @@ namespace ApiAggregator.API.Tests.Services
             var newsMock = new Mock<IApiClientInterface>();
             var exchangeMock = new Mock<IApiClientInterface>();
 
-            weatherMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+            weatherMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ApiResult<WeatherResponse> { Source = "OpenWeather", IsSuccess = true });
 
-            newsMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+            newsMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ApiResult<NewsResponse> { Source = "News", IsSuccess = true });
 
-            exchangeMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>()))
+            exchangeMock.Setup(x => x.FetchDataAsync(It.IsAny<AggregateQueryParameters>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ApiResult<ExchangeRateResponse> { Source = "ExchangeRates", IsSuccess = true });
 
             var clients = new List<IApiClientInterface> { weatherMock.Object, newsMock.Object, exchangeMock.Object };
 
             var service = new AggregationService(clients, statsMock.Object, _cache);
 
-            await service.GetEverythingAsync(new AggregateQueryParameters());
+            await service.GetEverythingAsync(new AggregateQueryParameters(), CancellationToken.None);
 
             statsMock.Verify(x => x.RecordRequest("OpenWeather", It.Is<double>(t => t >= 0.0)), Times.Once);
             statsMock.Verify(x => x.RecordRequest("News", It.Is<double>(t => t >= 0.0)), Times.Once);

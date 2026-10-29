@@ -23,7 +23,7 @@ namespace ApiAggregator.API.Clients
             ApiKey = apiKey ?? string.Empty;
         }
 
-        public async Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters)
+        public async Task<IApiResult> FetchDataAsync(AggregateQueryParameters parameters, CancellationToken cancellationToken)
         {
             var result = new ApiResult<TResponse> { Source = SourceName };
 
@@ -37,7 +37,7 @@ namespace ApiAggregator.API.Clients
             try
             {
                 var url = BuildRequestUrl(parameters);
-                using var response = await _httpClient.GetAsync(url);
+                using var response = await _httpClient.GetAsync(url, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -46,7 +46,7 @@ namespace ApiAggregator.API.Clients
                     return result;
                 }
 
-                var data = await response.Content.ReadFromJsonAsync<TResponse>();
+                var data = await response.Content.ReadFromJsonAsync<TResponse>(cancellationToken);
                 var processed = data is null ? default : ProcessResponse(data);
 
                 if (processed is null)
@@ -58,6 +58,10 @@ namespace ApiAggregator.API.Clients
 
                 result.Data = processed;
                 result.IsSuccess = true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

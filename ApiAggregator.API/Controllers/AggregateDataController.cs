@@ -53,9 +53,9 @@ namespace ApiAggregator.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetData([FromQuery] AggregateQueryParameters parameters)
+        public async Task<IActionResult> GetData([FromQuery] AggregateQueryParameters parameters, CancellationToken cancellationToken)
         {
-            var result = await _aggregationService.GetEverythingAsync(parameters);
+            var result = await _aggregationService.GetEverythingAsync(parameters, cancellationToken);
             return Ok(result);
         }
 
