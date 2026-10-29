@@ -74,5 +74,51 @@ namespace ApiAggregator.API.Tests.Clients
             Assert.False(result.IsSuccess);
             Assert.Empty(handler.Requests);
         }
+
+        [Fact]
+        public async Task NetworkError_ReturnsGenericMessage_AndDoesNotLeakInternalDetails()
+        {
+            // Arrange: the network call fails with an exception that contains internal details
+            var handler = new FakeHttpMessageHandler((_, _) =>
+                throw new HttpRequestException("No such host is known (internal-proxy.local:443)"));
+            var client = CreateWeatherClient(handler);
+
+            // Act
+            var result = await client.FetchDataAsync(new AggregateQueryParameters(), CancellationToken.None);
+
+            // Assert: the user gets a generic message, never the exception details
+            Assert.False(result.IsSuccess);
+            Assert.Equal("OpenWeather is temporarily unavailable.", result.ErrorMessage);
+            Assert.DoesNotContain("internal-proxy", result.ErrorMessage);
+        }
+
+        [Fact]
+        public async Task Timeout_IsTreatedAsFailure_NotRethrown()
+        {
+            // Arrange: a timeout throws OperationCanceledException, but OUR token is NOT cancelled
+            var handler = new FakeHttpMessageHandler((_, _) =>
+                throw new TaskCanceledException("Simulated timeout"));
+            var client = CreateWeatherClient(handler);
+
+            // Act
+            var result = await client.FetchDataAsync(new AggregateQueryParameters(), CancellationToken.None);
+
+            // Assert: handled as an API failure, not propagated as a cancellation
+            Assert.False(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task UserCancellation_IsRethrown()
+        {
+            // Arrange: the caller has already cancelled the request
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var handler = new FakeHttpMessageHandler((_, ct) => Task.FromCanceled<HttpResponseMessage>(ct));
+            var client = CreateWeatherClient(handler);
+
+            // Act + Assert: the cancellation must bubble up, not be swallowed as a failure
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => client.FetchDataAsync(new AggregateQueryParameters(), cts.Token));
+        }
     }
 }
