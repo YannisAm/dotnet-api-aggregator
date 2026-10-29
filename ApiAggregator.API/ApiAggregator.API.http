@@ -1,6 +1,15 @@
 @ApiAggregator.API_HostAddress = http://localhost:5196
 
-GET {{ApiAggregator.API_HostAddress}}/weatherforecast/
+### Aggregated data with default parameters
+GET {{ApiAggregator.API_HostAddress}}/api/AggregateData
+Accept: application/json
+
+### Aggregated data with custom parameters
+GET {{ApiAggregator.API_HostAddress}}/api/AggregateData?NewsKeyword=fintech&BaseCurrency=USD&Lat=40.27&Lon=22.50
+Accept: application/json
+
+### API performance statistics
+GET {{ApiAggregator.API_HostAddress}}/api/AggregateData/stats
 Accept: application/json
 
 ###
