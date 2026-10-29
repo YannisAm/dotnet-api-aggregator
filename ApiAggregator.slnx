@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ApiAggregator.API.Tests/ApiAggregator.API.Tests.csproj" Id="cf160d67-a3f1-4dd8-bc8e-88f79bbc600b" />
+  <Project Path="ApiAggregator.API/ApiAggregator.API.csproj" />
+</Solution>
