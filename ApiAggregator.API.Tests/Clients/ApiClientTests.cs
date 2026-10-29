@@ -5,6 +5,7 @@ using ApiAggregator.API.DTOs.Weather;
 using ApiAggregator.API.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using ApiAggregator.API.DTOs.ExchangeRates;
 
 namespace ApiAggregator.API.Tests.Clients
 {
@@ -119,6 +120,34 @@ namespace ApiAggregator.API.Tests.Clients
             // Act + Assert: the cancellation must bubble up, not be swallowed as a failure
             await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => client.FetchDataAsync(new AggregateQueryParameters(), cts.Token));
+        }
+
+        [Fact]
+        public async Task ExchangeRates_KeepsOnlyMajorCurrencies_SortedByValueDescending()
+        {
+            // Arrange: the fake API returns six currencies, including CHF which is not a major one
+            const string json = """
+                {
+                  "base_code": "EUR",
+                  "conversion_rates": { "EUR": 1, "USD": 1.08, "JPY": 162.5, "GBP": 0.85, "CNY": 7.8, "CHF": 0.95 }
+                }
+                """;
+            var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK, json);
+            var client = new ExchangeRatesClient(
+                new HttpClient(handler) { BaseAddress = new Uri("https://v6.exchangerate-api.com/v6/") },
+                ConfigWithKey("ExchangeRates", "test-key"),
+                NullLogger<ExchangeRatesClient>.Instance);
+
+            // Act: lowercase base currency on purpose
+            var result = await client.FetchDataAsync(new AggregateQueryParameters { BaseCurrency = "eur" }, CancellationToken.None);
+
+            // Assert (response): only the five major currencies, highest rate first, CHF removed
+            var rates = Assert.IsType<ExchangeRateResponse>(result.Data);
+            Assert.Equal(new[] { "JPY", "CNY", "USD", "EUR", "GBP" }, rates.Rates.Keys);
+
+            // Assert (request): API key in the path and base currency upper-cased
+            var request = Assert.Single(handler.Requests);
+            Assert.EndsWith("/test-key/latest/EUR", request.RequestUri!.AbsolutePath);
         }
     }
 }
